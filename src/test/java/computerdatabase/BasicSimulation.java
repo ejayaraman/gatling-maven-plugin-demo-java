@@ -17,12 +17,17 @@ public class BasicSimulation extends Simulation {
     .acceptLanguageHeader("en-US,en;q=0.5")
     .userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0");
 
-  ScenarioBuilder scn = scenario("Scenario Name") // A scenario is a chain of requests and pauses
+  ScenarioBuilder scn = scenario("Scenario Name")
+          .exec(session -> session.set("validateRowCount", true))
+          .exec(session -> session.set("expectedNumberOfLines", 100000))// A scenario is a chain of requests and pauses
     .exec(http("request_1")
       .get("/"))
     .pause(7) // Note that Gatling has recorded real time pauses
     .exec(http("request_2")
-      .get("/computers?f=macbook"))
+      .get("/computers?f=macbook")
+                    .checkIf("#{validateRowCount}").then(
+                  regex("Mac").count().gte(session -> session.getInt("expectedNumberOfLines")))
+          )
     .pause(2)
     .exec(http("request_3")
       .get("/computers/6"))
